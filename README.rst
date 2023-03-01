@@ -1,5 +1,8 @@
-A Python package designed for visualising SHARPs and SMARPs solar active region patches.
-----------------------------------------------------------------------------------------
+solarpatch
+----------
+
+a Python package designed for visualising SHARPs and SMARPs solar active region patches.
+
 
 License
 -------
