@@ -10,17 +10,18 @@ a Python package designed for visualising SHARPs and SMARPs solar active region 
 Quick-start guide
 -----------------
 
-```bash
-$ git clone https://https://github.com/PaulJWright/sdoml.git
-$ cd sdoml
-$ pip install -e .
-```
+.. code:: bash
 
-```python
-from solarpatch import SolarPatch
+    $ git clone https://https://github.com/PaulJWright/solarpatch.git
+    $ cd solarpatch
+    $ pip install -e .[test]
 
-sp = SolarPatch()
-```
+.. code:: python
+
+    from solarpatch import SolarPatch
+    
+    sp = SolarPatch()
+
 
 License
 -------
