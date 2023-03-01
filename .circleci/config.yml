@@ -32,6 +32,9 @@ jobs:
       - run:
           name: pwd
           command: pwd
+      - run:
+          name: ls
+          command: ls
       # - run:
       #     name: install_package
       #     command: python3 -m pip install -e .[test]
