@@ -3,6 +3,9 @@ solarpatch
 
 a Python package designed for visualising SHARPs and SMARPs solar active region patches.
 
+.. image:: https://dl.circleci.com/status-badge/img/gh/PaulJWright/solarpatch/tree/main.svg?style=shield
+    :target: https://dl.circleci.com/status-badge/redirect/gh/PaulJWright/solarpatch/tree/main
+    :alt: CICD Status
 
 License
 -------
