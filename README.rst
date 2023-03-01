@@ -7,6 +7,21 @@ a Python package designed for visualising SHARPs and SMARPs solar active region 
     :target: https://dl.circleci.com/status-badge/redirect/gh/PaulJWright/solarpatch/tree/main
     :alt: CICD Status
 
+Quick-start guide
+-----------------
+
+```bash
+$ git clone https://https://github.com/PaulJWright/sdoml.git
+$ cd sdoml
+$ pip install -e .
+```
+
+```python
+from solarpatch import SolarPatch
+
+sp = SolarPatch()
+```
+
 License
 -------
 
