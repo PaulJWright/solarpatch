@@ -27,8 +27,8 @@ jobs:
     # CircleCI will report the results back to your VCS provider.
     steps:
       - checkout
-      - python/install-packages:
-          pkg-manager: pip
+      # - python/install-packages:
+      #     pkg-manager: pip
       - run:
           name: pwd
           command: pwd
