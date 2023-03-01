@@ -19,7 +19,7 @@ Quick-start guide
 .. code:: python
 
     from solarpatch import SolarPatch
-    
+
     sp = SolarPatch()
 
 
