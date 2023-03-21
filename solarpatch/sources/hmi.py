@@ -1,39 +1,40 @@
 import copy
 import multiprocessing as mp
-from datetime import datetime
-import datetime
-from typing import Dict, List
 
 import drms
-from astropy.io import fits
-import matplotlib.patches as ptc
-import matplotlib.pyplot as plt
-from matplotlib.colors import BoundaryNorm, ListedColormap
-import numpy as np
-import pandas as pd
 
 from solarpatch.sources.data_base import GenericDataSource
 
-__all__=["HMISolarPatch"]
+__all__ = ["HMISolarPatch"]
+
 
 class HMISolarPatch(GenericDataSource):
     """
-    HMI 
-    
+    HMI
+
     This class will extract and set the HMI-specific keys  before
     obtaining the HMI full-disk data, and SHARP patches.
     """
+
     def __init__(self, observation_date, synthetic, **kwargs):
         """
         Parameters
         ----------
         """
         self.instrument = "HMI"
-        self._mag_keys_required = ['CRPIX1', 'CRPIX2', 'RSUN_OBS', 'T_OBS', 'CDELT1']
-        self._patch_keys_required = ['CRPIX1', 'CRPIX2', 'HARPNUM']
+        self._mag_keys_required = [
+            "CRPIX1",
+            "CRPIX2",
+            "RSUN_OBS",
+            "T_OBS",
+            "CDELT1",
+        ]
+        self._patch_keys_required = ["CRPIX1", "CRPIX2", "HARPNUM"]
 
-        self._jsoc_email = 'paul@wrightai.com'
-        self._c = drms.Client(debug=False, verbose=False, email=self._jsoc_email)
+        self._jsoc_email = "paul@wrightai.com"
+        self._c = drms.Client(
+            debug=False, verbose=False, email=self._jsoc_email
+        )
 
         super().__init__(observation_date, synthetic, **kwargs)
         # this will set the:
@@ -47,12 +48,11 @@ class HMISolarPatch(GenericDataSource):
         #   - self._get_patch_data()
         #   - self._data.rotate()
 
-
     # HMI-specific methods for getting the data
     def _get_fulldisk_data(self, synthetic=True):
-        """ 
-        get the fulldisk HMI data 
-        
+        """
+        get the fulldisk HMI data
+
         Parameters
         ----------
 
@@ -64,31 +64,37 @@ class HMISolarPatch(GenericDataSource):
         keys : Dict
             a dictionary of keys (metadata for the HMI image)
 
-        segs : Optional = None: 
+        segs : Optional = None:
             segments returned if Synthetic is False
 
         """
 
         # check if the magnetogram requested is hmi or mdi
-        magnetogram_string = f'hmi.M_720s[{self._original_obs_date}]'
+        magnetogram_string = f"hmi.M_720s[{self._original_obs_date}]"
 
         # if synthetic, only return keys
         if self._synthetic:
-            keys = self._c.query(magnetogram_string, key=self._mag_keys_required)
+            keys = self._c.query(
+                magnetogram_string, key=self._mag_keys_required
+            )
             segs = None
         else:
-            keys, segs = self._c.query(magnetogram_string, key=self._mag_keys_required, segs='magnetogram') 
+            keys, segs = self._c.query(
+                magnetogram_string,
+                key=self._mag_keys_required,
+                segs="magnetogram",
+            )
 
         # raise error if there are no keys returned
         if len(keys) == 0:
-            raise ValueError(f'{self._date_time} returns no results!')
-        
+            raise ValueError(f"{self._date_time} returns no results!")
+
         return keys, segs
 
     # HMI-specific methods for getting the data
     def _get_patches_bitmap(self):
-        """ 
-        get the bitmap SHARP patches 
+        """
+        get the bitmap SHARP patches
 
         Returns
         -------
@@ -98,13 +104,14 @@ class HMISolarPatch(GenericDataSource):
         """
 
         patch_keys, patch_segs = self.c.query(
-            f'hmi.sharp_720s[][{self._observation_date}]', 
-            key=self._patch_keys_required, 
-            seg='bitmap')
+            f"hmi.sharp_720s[][{self._observation_date}]",
+            key=self._patch_keys_required,
+            seg="bitmap",
+        )
 
-        urls = 'http://jsoc.stanford.edu/' + patch_segs.bitmap
+        urls = "http://jsoc.stanford.edu/" + patch_segs.bitmap
 
-        with mp.Pool(processes=4) as pool: # create a pool of 4 processes
+        with mp.Pool(processes=4) as pool:  # create a pool of 4 processes
             patch_data = pool.map(self.get_patch_data, urls)
 
         return patch_data, patch_keys, patch_segs
