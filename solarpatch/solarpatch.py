@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from solarpatch.sources.data_base import SolarPatchFactory
+from solarpatch.sources.dataset_factory import DataSourceFactory
 
 __all__ = ["SolarPatchCollection"]
 
@@ -8,7 +8,7 @@ __all__ = ["SolarPatchCollection"]
 class SolarPatchCollection:
     def __init__(self, date):
         self.date = date
-        self.solarpatches = SolarPatchFactory.create_solar_patches(date)
+        self.solarpatches = DataSourceFactory.create_solar_patches(date)
 
     def plot(self, instrument=None):
         # Check if the instrument is available
