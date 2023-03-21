@@ -9,14 +9,15 @@ import drms
 import matplotlib.patches as ptc
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from astropy.io import fits
-from matplotlib.colors import BoundaryNorm, ListedColormap
+from matplotlib.colors import BoundaryNorm
 
 import solarpatch.utils.default_variables as dv
 from solarpatch.sun.real_sun import RealSun
 from solarpatch.sun.synth_sun import SynthSun
 from solarpatch.utils.plotting import text_plotting
+
+__all__ = ["GenericDataSource"]
 
 
 class GenericDataSource(ABC):
@@ -37,7 +38,7 @@ class GenericDataSource(ABC):
 
     def __init__(self, observation_date, synthetic=True):
         # set the parameters
-        self._original_obs_date = observation_date
+        self._original_observation_date = observation_date
         self._synthetic = synthetic
 
         # get and set fulldisk data
@@ -49,15 +50,19 @@ class GenericDataSource(ABC):
         ]  # should we be using T_OBS?
         # alert the user that we are using a different observation date
 
-        if np.all(self._original_obs_date != self._observation_date):
+        if np.all(self._original_observation_date != self._observation_date):
             # logger.info
             print(
-                f"the provided date was {self._original_obs_date}, \n"
+                f"the provided date was {self._original_observation_date}, \n"
                 + f"the retrieved magnetogram is from {self._observation_date}"
             )
 
         # generate the data
-        self._data = SynthSun(self._keys) if self._synthetic else RealSun()
+        self._data = (
+            SynthSun(self._keys, self.image_size)
+            if self._synthetic
+            else RealSun()
+        )
 
         # get and set the patch data
         (
@@ -75,7 +80,8 @@ class GenericDataSource(ABC):
 
     @property
     def observation_date(self) -> str:
-        # this should be set on instantiation and then only read; shouldn't be able to change it...
+        # this should be set on instantiation and then only read;
+        # shouldn't be able to change it...
         return self._observation_date
 
     @property
@@ -183,7 +189,7 @@ class GenericDataSource(ABC):
         """
 
         # region number
-        region_number = int(self.patch_keys.iloc[i].HARPNUM)
+        region_number = int(self.patch_keys.iloc[i][self.series_name])
 
         # get x/y values of rectangle and the rectangle object.
         y1, y2, x1, x2, rectangle = self._get_single_bbox(i)
@@ -264,7 +270,7 @@ class GenericDataSource(ABC):
         # plot the image
         _ = plt.imshow(
             self._data.data, origin="lower", cmap=dv.SOLARPATCH_CMAP, norm=norm
-        )  # cmap='tab10', norm=colors.Normalize(vmin=0, vmax=34), interpolation='nearest')
+        )
 
         # plot the legend
         legend = plt.legend(
@@ -279,8 +285,8 @@ class GenericDataSource(ABC):
 
         # display the observation date, and series
         text_plotting(
-            obs_date=self._observation_date,
-            series_name="HARPNUM",
+            observation_date=self._observation_date,
+            series_name=self.series_name,
             img_size=self._data.data.shape[0],
             streamlit=True,
         )
@@ -294,3 +300,11 @@ class GenericDataSource(ABC):
         )
 
         plt.show()
+
+    @abstractmethod
+    def datasource(cls, observation_date, synthetic) -> bool:
+        """
+        Determines if ``instrument`` should lead to the instantiation
+        of this child class
+        """
+        pass

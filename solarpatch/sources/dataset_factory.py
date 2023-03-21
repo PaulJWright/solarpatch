@@ -52,7 +52,7 @@ class DataSourceFactory(BasicRegistrationFactory):
     factory.
     """
 
-    def __call__(self, instrument, meta, **kwargs):
+    def __call__(self, observation_date, synthetic, **kwargs):
         """
         This function iterates over each registered type,
         checking to see if WidgetType matches the arguments.
@@ -63,16 +63,16 @@ class DataSourceFactory(BasicRegistrationFactory):
 
         try:
             new_datum = self._check_registered_widgets(
-                instrument, meta, **kwargs
+                observation_date, synthetic, **kwargs
             )
             new_data.append(new_datum)
         except NoMatchError as e:
             print(f"One of the data sources failed to validate with: {e}")
 
-        if len(new_data) == 1:
-            return new_data[0]
+        # if len(new_data) == 1:
+        return new_data  # [0]
 
-    def _check_registered_widgets(self, instrument, meta, **kwargs):
+    def _check_registered_widgets(self, observation_date, synthetic, **kwargs):
         """
         Implementation of a basic check to see if arguments match a widget.
         """
@@ -81,7 +81,7 @@ class DataSourceFactory(BasicRegistrationFactory):
         candidate_widget_types = [
             key
             for key in self.registry
-            if self.registry[key](instrument, meta, **kwargs)
+            if self.registry[key](observation_date, synthetic, **kwargs)
         ]
 
         # ensure that only one match exists; throws errors otherwise
@@ -97,7 +97,7 @@ class DataSourceFactory(BasicRegistrationFactory):
                 widget_types = [self.default_widget_type]
         else:
             widget_types = [
-                WidgetType(instrument, meta, **kwargs)
+                WidgetType(observation_date, synthetic, **kwargs)
                 for WidgetType in candidate_widget_types
             ]
 

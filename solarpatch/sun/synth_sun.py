@@ -4,15 +4,15 @@ from solarpatch.sun.generic_sun import GenericSun
 
 
 class SynthSun(GenericSun):
-    def __init__(self, keys):
-        super().__init__(keys)
+    def __init__(self, keys, img_size):
+        super().__init__(keys, img_size)
 
-    def data_gen(self, keys):
+    def data_gen(self, keys, img_size):
         """
         generate the data
         """
-        x = np.arange(0, 4096)  # need to remove hard-coded value here...
-        y = np.arange(0, 4096)
+        x = np.arange(0, img_size)  # need to remove hard-coded value here...
+        y = np.arange(0, img_size)
         radius = keys["RSUN_OBS"][0] / keys["CDELT1"][0]
 
         data = np.zeros((y.size, x.size)) * np.nan

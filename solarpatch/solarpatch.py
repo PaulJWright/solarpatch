@@ -1,14 +1,16 @@
 import matplotlib.pyplot as plt
 
-from solarpatch.sources.dataset_factory import DataSourceFactory
+from solarpatch.sources.dataset_factory import DataSource
 
 __all__ = ["SolarPatchCollection"]
 
 
 class SolarPatchCollection:
-    def __init__(self, date):
+    def __init__(self, date, synthetic=True):
         self.date = date
-        self.solarpatches = DataSourceFactory.create_solar_patches(date)
+        self.solarpatches = DataSource(
+            observation_date=date, synthetic=synthetic
+        )
 
     def plot(self, instrument=None):
         # Check if the instrument is available

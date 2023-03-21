@@ -4,9 +4,9 @@ from solarpatch.utils.helper_functions import rotate_points
 
 
 class GenericSun:  # based on SunPy map
-    def __init__(self, keys):
+    def __init__(self, keys, img_size):
         # set the data
-        self.data = self.data_gen(keys)
+        self.data = self.data_gen(keys, img_size)
 
         return
 
