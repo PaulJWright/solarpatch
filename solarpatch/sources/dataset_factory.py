@@ -69,8 +69,8 @@ class DataSourceFactory(BasicRegistrationFactory):
         except NoMatchError as e:
             print(f"One of the data sources failed to validate with: {e}")
 
-        # if len(new_data) == 1:
-        return new_data  # [0]
+        if len(new_data) == 1:
+            return new_data[0]
 
     def _check_registered_widgets(self, observation_date, synthetic, **kwargs):
         """
@@ -101,6 +101,7 @@ class DataSourceFactory(BasicRegistrationFactory):
                 for WidgetType in candidate_widget_types
             ]
 
+        # fix this returning the zeroth element thing:
         return widget_types
 
 

@@ -6,15 +6,19 @@ __all__ = ["text_plotting", "package_text"]
 
 
 def text_plotting(
-    obs_date=None, series_name=None, img_size=None, streamlit=True, **kwargs
+    observation_date=None,
+    series_name=None,
+    img_size=None,
+    streamlit=True,
+    **kwargs
 ):
     """
     Plot date and `series_name`
     """
-    if obs_date is None:
-        raise ValueError("Please provide an `obs_date`")
+    if observation_date is None:
+        raise ValueError("Please provide an `observation_date`")
 
-    date_obj = datetime.strptime(obs_date, "%Y.%m.%d_%H:%M:%S")
+    date_obj = datetime.strptime(observation_date, "%Y.%m.%d_%H:%M:%S")
     plt.text(
         100,
         img_size - 200,
