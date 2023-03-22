@@ -1,38 +1,86 @@
-import matplotlib.pyplot as plt
+from datetime import datetime
+from typing import List, Tuple, Union
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+import solarpatch.utils.default_variables as dv
 from solarpatch.sources.dataset_factory import DataSource
 
-__all__ = ["SolarPatchCollection"]
+__all__ = ["SolarPatch"]
 
 
-class SolarPatchCollection:
-    def __init__(self, date, synthetic=True):
-        self.date = date
-        self.solarpatches = DataSource(
-            observation_date=date, synthetic=synthetic
-        )
+class SolarPatch:
+    """
+    A class to hold and display solar patches.
+    """
 
-    def plot(self, instrument=None):
-        # Check if the instrument is available
-        if instrument and instrument not in [
-            sp.instrument for sp in self.solarpatches
-        ]:
-            raise ValueError(
-                f"{instrument} data is not available for {self.date}"
+    def __init__(
+        self,
+        observation_date: datetime = dv.COTEMPORAL_DATE,
+        synthetic: bool = True,
+    ) -> None:
+        """
+        Constructs a SolarPatch object
+
+        Parameters:
+        -----------
+        observation_date : datetime, optional
+            The date and time of the solar patch observation.
+            Default is defined in `solarpath.utils.default_varaibles`
+            as `dv.COTEMPORAL_TIME`
+
+        synthetic : bool, optional
+            Whether the background data is synthetic or not. Default is True.
+
+        Raises:
+        -------
+        TypeError:
+            If the `observation_date` parameter is not an instance of `datetime`.
+
+        NotImplementedError:
+            If the `synthetic` parameter is False.
+
+        """
+
+        if not isinstance(observation_date, datetime):
+            raise TypeError(
+                "The 'observation_date' parameter must be an instance of 'datetime'."
             )
 
-        # Plot the solar patches
+        if not synthetic:
+            raise NotImplementedError("`synthetic = False` is not implemented")
+
+        self._observation_date = observation_date
+        self._solarpatches = DataSource(
+            observation_date=self._observation_date, synthetic=synthetic
+        )
+
+    def plot(self, **kwargs):
         if len(self.solarpatches) == 1:
-            fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-            if not instrument or self.solarpatches[0].instrument == instrument:
-                self.solarpatches[0].plot(ax)
+            fig, ax = plt.subplots()
+            self.solarpatches[0].plot(ax=ax)
+            plt.show()
         elif len(self.solarpatches) == 2:
-            fig, axes = plt.subplots(1, 2, figsize=(20, 10))
-            for i, ax in enumerate(axes):
-                if (
-                    not instrument
-                    or self.solarpatches[i].instrument == instrument
-                ):
-                    self.solarpatches[i].plot(ax)
+            fig, axs = plt.subplots(nrows=1, ncols=2)
+            for i in range(len(self.solarpatches)):
+                ax = axs[i]
+                sp = self.solarpatches[i]
+                sp.plot(ax=ax, legend=False, plot_axis=True, **kwargs)
+            plt.show()
         else:
             raise NotImplementedError("Cannot plot more than 2 SolarPatches")
+
+    @property
+    def solarpatches(self) -> List[DataSource]:
+        """
+        Returns the DataSource objects representing the solar patch data.
+
+        Returns:
+        --------
+        List[DataSource]:
+            A list of DataSource objects representing the solar patch data.
+
+        """
+
+        return self._solarpatches

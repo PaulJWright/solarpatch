@@ -9,16 +9,22 @@ class SynthSun(GenericSun):
 
     def data_gen(self, keys, img_size):
         """
-        generate the data
+        generate the blank map of the Sun:
+            * 1.0 on disk
+            * nan off disk
         """
-        x = np.arange(0, img_size)  # need to remove hard-coded value here...
-        y = np.arange(0, img_size)
+        # setting up the data
+        x, y = np.arange(0, img_size), np.arange(0, img_size)
+        data = np.zeros((y.size, x.size)) * np.nan
+
+        # get solar radius
         radius = keys["RSUN_OBS"][0] / keys["CDELT1"][0]
 
-        data = np.zeros((y.size, x.size)) * np.nan
+        # set all values within the radius as 1.0 (nan outside)
         mask = (x[np.newaxis, :] - keys["CRPIX2"][0]) ** 2 + (
             y[:, np.newaxis] - keys["CRPIX1"][0]
         ) ** 2 < radius**2
+
         data[mask] = 1.0
 
         return data

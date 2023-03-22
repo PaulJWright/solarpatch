@@ -1,8 +1,8 @@
 import copy
-import datetime
 import multiprocessing as mp
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from typing import Dict, List
 
 import drms
@@ -15,6 +15,10 @@ from matplotlib.colors import BoundaryNorm
 import solarpatch.utils.default_variables as dv
 from solarpatch.sun.real_sun import RealSun
 from solarpatch.sun.synth_sun import SynthSun
+from solarpatch.utils.helper_functions import (
+    datetime_to_jsoc,
+    jsoc_to_datetime,
+)
 from solarpatch.utils.plotting import text_plotting
 
 __all__ = ["GenericDataSource"]
@@ -38,16 +42,19 @@ class GenericDataSource(ABC):
 
     def __init__(self, observation_date, synthetic=True):
         # set the parameters
-        self._original_observation_date = observation_date
+        assert isinstance(observation_date, datetime)
+
+        self._original_observation_date = datetime_to_jsoc(observation_date)
         self._synthetic = synthetic
 
         # get and set fulldisk data
-        self._keys, self._segs = self._get_fulldisk_data(synthetic)
+        self._keys, self._segs = self._get_fulldisk_data()
 
         # update the observation date based on the magnetogram obtained
+        # should we be using T_OBS?
         self._observation_date = self._keys.T_OBS[0][
             :-4
-        ]  # should we be using T_OBS?
+        ]  # will this format be correct?????
         # alert the user that we are using a different observation date
 
         if np.all(self._original_observation_date != self._observation_date):
@@ -90,12 +97,12 @@ class GenericDataSource(ABC):
         return self._data
 
     @abstractmethod
-    def _get_fulldisk_data(self, synthetic) -> Dict:
+    def _get_fulldisk_data(self) -> Dict:
         """
-        get the fulldisk data from the data source. This should be keys-only if
-        synthetic=True, else segs should also be returned.
+        get the fulldisk data from the data source.
+        This should be keys-only if synthetic=True, else segs also returned.
         """
-        pass
+        raise NotImplementedError("Implement in child class")
 
     # @abstractmethod
     # def _set_fulldisk_data(self):
@@ -112,10 +119,20 @@ class GenericDataSource(ABC):
         """
         Method to get the set of bounding boxes in parallel
         """
-        with ThreadPoolExecutor() as executor:
-            self.bbox = executor.map(
-                self._one_patch, range(self.patch_keys.shape[0])
-            )
+
+        # this was causing issues with
+        # datetime(2022,1,1,0,0,0)
+        # overlapping boxes were being shitty.
+        # ...
+        # with ThreadPoolExecutor() as executor:
+        #     self.bbox = executor.map(
+        #         self._one_patch, range(self.patch_keys.shape[0])
+        #     )
+
+        self.bbox = []
+        self.bbox.extend(
+            self._one_patch(i) for i in range(self.patch_keys.shape[0])
+        )
 
     def _get_single_bbox(
         self, i, hatch="", fill=False, snap=False, lw=1.25, **kwargs
@@ -215,20 +232,19 @@ class GenericDataSource(ABC):
         # updates the sun object.
         self._data.data[y1:y2, x1:x2][nonzero] = mx
 
-    # def plot(self, ax):
-    #     # Plot the active regions ("patches") on the sun for this instrument and date
-    #     ax.set_title(f"{self.instrument} {self.date}")
-    #     # Code to plot active regions on the sun for this instrument and date
-
     def plot(
         self,
-        magnetogram_bg: bool = False,
-        transparent: bool = True,
-        return_plot_object: bool = False,
-        outfile: str = None,
-        dpi: int = 200,
+        # magnetogram_bg: bool = False,
+        # transparent: bool = True,
+        return_plot_object: bool = True,
+        ax=None,
+        # outfile: str = None,
+        # dpi: int = 200,
         plot_axis: bool = False,
         figsize: tuple = (15, 15),
+        streamlit=True,
+        plot_legend=False,
+        **kwargs,
     ) -> None:
         """
         method for plotting the Sun and the SHARP/SMARP regions
@@ -246,12 +262,15 @@ class GenericDataSource(ABC):
         ...
         """
 
-        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize, **kwargs)
+        else:
+            fig = ax.get_figure()
 
         if not plot_axis:
-            plt.axis("off")
+            ax.axis("off")
 
-        ticks = np.array(list(dv.BITMAP_DICT.keys()))
+        ticks = np.array(list(dv.SHARP_BITMAP_DICT.keys()))
         bounds = (
             [0] + list(ticks[:-1] + (ticks[1:] - ticks[:-1]) / 2) + [ticks[-1]]
         )
@@ -259,47 +278,58 @@ class GenericDataSource(ABC):
 
         # Go through the bounding boxes and plot
         for rectangle, label in self.bbox:
-            """plot the rectanges and associated text"""
+            """
+            plot the bounding box rectangles and associated label
+            """
             ax.add_patch(rectangle)
-            plt.text(
+            ax.text(
                 rectangle.get_x(),
                 rectangle.get_y() + rectangle.get_height() + 20,
                 label,
-            )  # backgroundcolor=colors[0], fontsize=6)
+            )
 
-        # plot the image
-        _ = plt.imshow(
+        # plot the full bitmap image
+        _ = ax.imshow(
             self._data.data, origin="lower", cmap=dv.SOLARPATCH_CMAP, norm=norm
         )
 
+        # ensure that this is appropriately shaped
+        ax.set_aspect(self._data.data.shape[1] / self._data.data.shape[0])
+
         # plot the legend
-        legend = plt.legend(
-            [
-                ptc.Patch(color=dv.SOLARPATCH_CMAP(norm(b)))
-                for b in reversed(bounds[:-1])
-            ],
-            [f"{v}" for k, v in reversed(dv.BITMAP_DICT.items())],
-            edgecolor="black",
-        )
-        legend.get_frame().set_linewidth(1.25)
+        if plot_legend:
+            legend = ax.legend(
+                [
+                    ptc.Patch(color=dv.SOLARPATCH_CMAP(norm(b)))
+                    for b in reversed(bounds[:-1])
+                ],
+                [f"{v}" for k, v in reversed(dv.SHARP_BITMAP_DICT.items())],
+                edgecolor="black",
+            )
+            legend.get_frame().set_linewidth(1.25)
 
         # display the observation date, and series
         text_plotting(
+            ax=ax,
             observation_date=self._observation_date,
             series_name=self.series_name,
             img_size=self._data.data.shape[0],
-            streamlit=True,
+            streamlit=streamlit,
+            show_date=False,
         )
 
         # urgh, this is stupid
-        plt.text(
+        ax.text(
             self._keys["CRPIX2"][0],
             self._keys["CRPIX1"][0] + (self._data.data.shape[0] / 2),
             "S O U T H",
             horizontalalignment="center",
         )
 
-        plt.show()
+        if return_plot_object:
+            return fig, ax
+        else:
+            plt.show()
 
     @abstractmethod
     def datasource(cls, observation_date, synthetic) -> bool:

@@ -5,6 +5,7 @@ import numpy as np
 
 import solarpatch.utils.default_variables as dv
 from solarpatch.sources.data_base import GenericDataSource
+from solarpatch.utils.helper_functions import mdi_bitmap_to_hmi
 
 __all__ = ["MDISolarPatch"]
 
@@ -52,7 +53,7 @@ class MDISolarPatch(GenericDataSource):
         #   - self._data.rotate()
 
     # MDI-specific methods for getting the data
-    def _get_fulldisk_data(self, synthetic=True):
+    def _get_fulldisk_data(self):
         """
         get the fulldisk MDI data
 
@@ -114,33 +115,49 @@ class MDISolarPatch(GenericDataSource):
             seg="bitmap",  # can also have magnetogram here...
         )
 
-        urls = dv.BASE_URL + patch_segs.bitmap
+        urls = dv.JSOC_BASE_URL + patch_segs.bitmap
 
         with mp.Pool(processes=4) as pool:  # create a pool of 4 processes
             patch_data = pool.map(self.get_patch_data, urls)
 
-        # make HMI-like
-        # fudge for now.
-        for p in patch_data:
-            p[np.isin(p, [5, 9, 17])] = 101
-            p[np.isin(p, [6, 10, 18])] = 102
-            p[np.isin(p, [37, 41, 49])] = 133
-            p[np.isin(p, [38, 42, 50])] = 134
-            p -= 100
+        # convert MDI bitmap to HMI-like data.
+        patch_data = mdi_bitmap_to_hmi(patch_data)
 
         return patch_data, patch_keys, patch_segs
 
     @classmethod
-    def datasource(cls, observation_date, synthetic) -> bool:
+    def datasource(cls, observation_date: str, synthetic: bool) -> bool:
         """
-        Determines if ``instrument`` should lead to the instantiation
-        of this child class
-        """
+        Determines if the ``observation_date`` should lead to
+        the instantiation of this child class.
 
-        # probably want to do on observation_date
-        # return observation.lower() == "hmi"
-        # return start_date <= parse(observation_date) <= end_date
-        return (
-            observation_date == "2010.07.14_11:00:08"
-            and synthetic == synthetic
+        Parameters
+        ----------
+        observation_date : str
+            The date of the observation in the format "YYYY.MM.DD_HH:MM:SS".
+
+        synthetic : bool
+            Whether to use synthetic data.
+
+        Returns
+        -------
+        bool
+            True if this child class should be instantiated, False otherwise.
+        """
+        # return (
+        #     dv.MDI_DATES['start_time'] <= observation_date <= dv.MDI_DATES['end_time']
+        # )
+        statement = (
+            dv.MDI_DATES["start_time"]
+            <= observation_date
+            <= dv.MDI_DATES["end_time"]
         )
+
+        # Might be more efficient to return the whole query...
+        if statement:
+            k = drms.Client(
+                debug=False, verbose=False, email=dv.JSOC_EMAIL
+            ).query(f"mdi.fd_M_96m_lev182[{observation_date}]", key=["CDELT1"])
+            return len(k) != 0
+        else:
+            return False

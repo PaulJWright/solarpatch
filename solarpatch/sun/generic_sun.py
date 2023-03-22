@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 import numpy as np
 
 from solarpatch.utils.helper_functions import rotate_points
@@ -22,22 +24,23 @@ class GenericSun:  # based on SunPy map
         """
         pass
 
-    @classmethod
+    @abstractmethod
     def data_gen(self, keys):
         """
-        data generation class
+        Generate data.
 
         Parameters
         ----------
         keys : Dict
-            A dictionary of keys
+            A dictionary of keys.
 
         Returns
         -------
-        data : np.array of data
+        np.array
+            Generated data.
         """
         pass
 
-    @classmethod
+    @abstractmethod
     def is_real(self):
         raise NotImplementedError()
